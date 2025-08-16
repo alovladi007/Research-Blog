@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  RESEARCHER
+  PROFESSOR
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PostType {
+  ARTICLE
+  QUESTION
+  DISCUSSION
+  PAPER
+  ANNOUNCEMENT
+}
+
+enum ReactionType {
+  LIKE
+  INSIGHTFUL
+  HELPFUL
+  CELEBRATE
+}
+
+model User {
+  id                String             @id @default(cuid())
+  email             String             @unique
+  emailVerified     DateTime?
+  password          String
+  name              String
+  bio               String?
+  avatar            String?
+  role              UserRole           @default(STUDENT)
+  institution       String?
+  department        String?
+  researchInterests String[]
+  orcid             String?            @unique
+  googleScholarId   String?
+  linkedinUrl       String?
+  websiteUrl        String?
+  
+  verificationStatus VerificationStatus @default(PENDING)
+  verificationDoc    String?
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  
+  posts             Post[]
+  comments          Comment[]
+  reactions         Reaction[]
+  followers         Follow[]           @relation("follower")
+  following         Follow[]           @relation("following")
+  groups            GroupMember[]
+  projects          ProjectMember[]
+  papers            Paper[]
+  reviews           Review[]
+  messages          Message[]
+  notifications     Notification[]
+  bookmarks         Bookmark[]
+  
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  @@index([email])
+  @@index([role])
+  @@index([verificationStatus])
+}
+
+model Post {
+  id            String        @id @default(cuid())
+  title         String?
+  content       String
+  type          PostType      @default(ARTICLE)
+  published     Boolean       @default(true)
+  tags          String[]
+  citations     Json?         // Store citation data
+  latex         Boolean       @default(false)
+  
+  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId      String
+  
+  group         Group?        @relation(fields: [groupId], references: [id])
+  groupId       String?
+  
+  project       Project?      @relation(fields: [projectId], references: [id])
+  projectId     String?
+  
+  attachments   Attachment[]
+  comments      Comment[]
+  reactions     Reaction[]
+  bookmarks     Bookmark[]
+  
+  viewCount     Int           @default(0)
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  @@index([authorId])
+  @@index([type])
+  @@index([published])
+  @@index([createdAt])
+}
+
+model Comment {
+  id        String     @id @default(cuid())
+  content   String
+  
+  post      Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+  
+  parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId  String?
+  replies   Comment[]  @relation("CommentReplies")
+  
+  reactions Reaction[]
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  @@index([postId])
+  @@index([authorId])
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  type      ReactionType
+  
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  post      Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String?
+  
+  comment   Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?
+  
+  createdAt DateTime     @default(now())
+  
+  @@unique([userId, postId, type])
+  @@unique([userId, commentId, type])
+  @@index([userId])
+  @@index([postId])
+  @@index([commentId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId  String
+  
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Group {
+  id          String         @id @default(cuid())
+  name        String
+  description String
+  avatar      String?
+  isPrivate   Boolean        @default(false)
+  
+  members     GroupMember[]
+  posts       Post[]
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  @@index([name])
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  role      String   @default("MEMBER") // ADMIN, MODERATOR, MEMBER
+  
+  joinedAt  DateTime @default(now())
+  
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+}
+
+model Project {
+  id           String          @id @default(cuid())
+  title        String
+  description  String
+  status       String          @default("ACTIVE") // ACTIVE, COMPLETED, ARCHIVED
+  visibility   String          @default("PUBLIC") // PUBLIC, PRIVATE
+  
+  members      ProjectMember[]
+  posts        Post[]
+  papers       Paper[]
+  
+  startDate    DateTime?
+  endDate      DateTime?
+  
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  
+  @@index([status])
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  role      String   @default("MEMBER") // LEAD, MEMBER, ADVISOR
+  
+  joinedAt  DateTime @default(now())
+  
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model Paper {
+  id            String    @id @default(cuid())
+  title         String
+  abstract      String
+  doi           String?   @unique
+  arxivId       String?   @unique
+  publishedDate DateTime?
+  journal       String?
+  conference    String?
+  
+  authors       User[]
+  project       Project?  @relation(fields: [projectId], references: [id])
+  projectId     String?
+  
+  pdfUrl        String?
+  citations     Int       @default(0)
+  
+  reviews       Review[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([doi])
+  @@index([arxivId])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  content    String
+  rating     Int      // 1-5
+  
+  paper      Paper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  paperId    String
+  
+  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewerId String
+  
+  isPublic   Boolean  @default(true)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([paperId, reviewerId])
+  @@index([paperId])
+  @@index([reviewerId])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  
+  createdAt DateTime @default(now())
+  
+  @@index([postId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  content    String
+  
+  sender     User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId   String
+  
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  chatRoomId String
+  
+  read       Boolean  @default(false)
+  
+  createdAt  DateTime @default(now())
+  
+  @@index([chatRoomId])
+  @@index([senderId])
+}
+
+model ChatRoom {
+  id           String    @id @default(cuid())
+  participants String[]  // User IDs
+  messages     Message[]
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  @@index([participants])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // FOLLOW, LIKE, COMMENT, MENTION, etc.
+  content   String
+  read      Boolean  @default(false)
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  relatedId String?  // ID of related entity (post, comment, etc.)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([read])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
