@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { hashPassword, isAcademicEmail, generateVerificationToken } from '@/lib/auth'
-import { sendVerificationEmail } from '@/lib/email'
+import { hashPassword, generateToken, isAcademicEmail, isCorporateEmail, sanitizeUser } from '@/lib/auth'
+import prisma from '@/lib/prisma'
 import { z } from 'zod'
 
+// Validation schema for signup
 const signupSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(8),
-  role: z.enum(['STUDENT', 'RESEARCHER', 'PROFESSOR']),
-  institution: z.string().min(2),
-  department: z.string().min(2),
-  orcid: z.string().optional(),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  role: z.enum(['STUDENT', 'RESEARCHER', 'PROFESSOR']).optional(),
+  institution: z.string().optional(),
+  department: z.string().optional(),
+  bio: z.string().optional(),
+  researchInterests: z.array(z.string()).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -19,84 +20,71 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Validate input
-    const validatedData = signupSchema.parse(body)
-    
-    // Check if email is academic
-    if (!isAcademicEmail(validatedData.email)) {
+    const validationResult = signupSchema.safeParse(body)
+    if (!validationResult.success) {
       return NextResponse.json(
-        { message: 'Please use a valid institutional email address' },
+        { message: 'Invalid input', errors: validationResult.error.errors },
         { status: 400 }
       )
     }
-    
+
+    const { email, password, name, role, institution, department, bio, researchInterests } = validationResult.data
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email.toLowerCase() },
+      where: { email },
     })
-    
+
     if (existingUser) {
       return NextResponse.json(
-        { message: 'An account with this email already exists' },
-        { status: 400 }
+        { message: 'User with this email already exists' },
+        { status: 409 }
       )
     }
-    
+
+    // Determine verification status based on email
+    const isAcademic = isAcademicEmail(email)
+    const isCorporate = isCorporateEmail(email)
+    const verificationStatus = isAcademic || isCorporate ? 'VERIFIED' : 'PENDING'
+
     // Hash password
-    const hashedPassword = await hashPassword(validatedData.password)
-    
-    // Create user with pending verification
+    const hashedPassword = await hashPassword(password)
+
+    // Create user in database
     const user = await prisma.user.create({
       data: {
-        email: validatedData.email.toLowerCase(),
+        email,
         password: hashedPassword,
-        name: validatedData.name,
-        role: validatedData.role,
-        institution: validatedData.institution,
-        department: validatedData.department,
-        orcid: validatedData.orcid,
-        verificationStatus: 'PENDING',
-        researchInterests: [],
+        name,
+        role: role || 'STUDENT',
+        institution,
+        department,
+        bio,
+        researchInterests: researchInterests || [],
+        verificationStatus,
+        verifiedAt: verificationStatus === 'VERIFIED' ? new Date() : null,
       },
     })
-    
-    // Generate verification token
-    const verificationToken = generateVerificationToken()
-    
-    // Store verification token (in production, use Redis or a separate table)
-    // For now, we'll use a simple approach
-    await prisma.$executeRaw`
-      UPDATE "User" 
-      SET "verificationDoc" = ${verificationToken} 
-      WHERE id = ${user.id}
-    `
-    
-    // Send verification email (implement this based on your email service)
-    try {
-      await sendVerificationEmail(user.email, verificationToken, user.name)
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError)
-      // Continue anyway - admin can manually verify
-    }
-    
+
+    // Generate JWT token
+    const token = generateToken(user.id)
+
+    // Return sanitized user data
+    const sanitizedUser = sanitizeUser(user)
+
     return NextResponse.json(
       {
-        message: 'Account created successfully. Please check your email for verification.',
-        userId: user.id,
+        message: 'User created successfully',
+        user: sanitizedUser,
+        token,
+        verified: verificationStatus === 'VERIFIED',
       },
       { status: 201 }
     )
   } catch (error) {
     console.error('Signup error:', error)
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { message: 'Invalid input data', errors: error.errors },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
-      { message: 'An error occurred during signup. Please try again.' },
+      { message: 'An error occurred during signup' },
       { status: 500 }
     )
   }

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { verifyPassword, generateToken, sanitizeUser } from '@/lib/auth'
 import { z } from 'zod'
 
+// Schema for incoming signin payload
 const signinSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -11,10 +12,9 @@ const signinSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
     // Validate input
     const validatedData = signinSchema.parse(body)
-    
+
     // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: validatedData.email.toLowerCase() },
@@ -31,24 +31,24 @@ export async function POST(request: NextRequest) {
         emailVerified: true,
       },
     })
-    
+
     if (!user) {
       return NextResponse.json(
         { message: 'Invalid email or password' },
         { status: 401 }
       )
     }
-    
+
     // Verify password
-    const isPasswordValid = await verifyPassword(validatedData.password, user.password)
-    
+    const isPasswordValid = await verifyPassword(validatedData.password, user.password as string)
+
     if (!isPasswordValid) {
       return NextResponse.json(
         { message: 'Invalid email or password' },
         { status: 401 }
       )
     }
-    
+
     // Check if email is verified
     if (!user.emailVerified) {
       return NextResponse.json(
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
-    
+
     // Check verification status
     if (user.verificationStatus === 'REJECTED') {
       return NextResponse.json(
@@ -64,47 +64,52 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
-    
+
     if (user.verificationStatus === 'PENDING') {
       return NextResponse.json(
-        { 
-          message: 'Your academic credentials are still being verified. You will receive an email once approved.',
-          verificationPending: true 
+        {
+          message:
+            'Your academic credentials are still being verified. You will receive an email once approved.',
+          verificationPending: true,
         },
         { status: 403 }
       )
     }
-    
+
     // Generate JWT token
-    const token = generateToken(user.id)
-    
+    const token = generateToken(user.id as string)
+
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
       data: { updatedAt: new Date() },
     })
-    
+
     // Return user data without password
     const sanitizedUser = sanitizeUser(user)
-    
+
+    // Attach limitedAccess flag if verificationStatus is LIMITED
+    const limitedAccess = user.verificationStatus === 'LIMITED'
+
     return NextResponse.json(
       {
-        message: 'Sign in successful',
+        message: 'Sign in successful' + (limitedAccess ? ' (limited access)' : ''),
         token,
         user: sanitizedUser,
+        limitedAccess,
       },
       { status: 200 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signin error:', error)
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { message: 'Invalid input data', errors: error.errors },
         { status: 400 }
       )
     }
-    
+
     return NextResponse.json(
       { message: 'An error occurred during sign in. Please try again.' },
       { status: 500 }
