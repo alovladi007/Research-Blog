@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: research-blog
+    runtime: node
+    buildCommand: yarn install && yarn build
+    startCommand: yarn start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: scholar-hub-db
+          property: connectionString
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        value: https://research-blog.onrender.com
+
+databases:
+  - name: scholar-hub-db
+    plan: free
+    databaseName: scholar_hub_db
+    user: scholar_hub_user
