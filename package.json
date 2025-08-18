@@ -1,12 +1,13 @@
 {
   "name": "scholar-hub",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Advanced academic collaboration platform for researchers, scientists, and students",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "postinstall": "prisma generate || true",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
