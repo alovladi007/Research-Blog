@@ -250,9 +250,10 @@ function AddCitationForm({ onAdd }: { onAdd: (citation: Citation) => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const { id: _, ...citationData } = formData as Citation
     const citation: Citation = {
+      ...citationData,
       id: Math.random().toString(36).substr(2, 9),
-      ...formData as Citation,
     }
     onAdd(citation)
   }

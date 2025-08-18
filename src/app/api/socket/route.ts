@@ -1,12 +1,12 @@
 import { Server } from 'socket.io'
 import { createServer } from 'http'
-import { NextApiRequest } from 'next'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-
-let io: Server | null = null
+import { setSocketServer, getSocketServer } from '@/lib/socket'
 
 export async function GET(req: Request) {
+  let io = getSocketServer()
+  
   if (!io) {
     const httpServer = createServer()
     io = new Server(httpServer, {
@@ -176,14 +176,10 @@ export async function GET(req: Request) {
     httpServer.listen(socketPort, () => {
       console.log(`WebSocket server running on port ${socketPort}`)
     })
+    
+    // Store the server instance for use in other modules
+    setSocketServer(io)
   }
 
   return new Response('WebSocket server initialized', { status: 200 })
-}
-
-// Helper function to emit events from other API routes
-export const emitSocketEvent = (event: string, room: string, data: any) => {
-  if (io) {
-    io.to(room).emit(event, data)
-  }
 }
