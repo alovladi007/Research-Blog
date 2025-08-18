@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "test-files": "node test-build.js",
+    "build": "node test-build.js && next build",
     "start": "next start",
     "postinstall": "prisma generate || true",
     "lint": "next lint",
