@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate --schema=./prisma/minimal-schema.prisma 2>/dev/null || prisma generate || echo 'Prisma generation skipped' && next build",
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
