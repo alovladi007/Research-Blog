@@ -130,7 +130,7 @@ export async function getUserAnalytics(userId: string): Promise<UserAnalytics> {
   let totalLikes = 0
   let totalComments = 0
 
-  user.posts.forEach(post => {
+  user.posts.forEach((post: any) => {
     totalViews += post.viewCount
     totalLikes += post._count.reactions
     totalComments += post._count.comments
@@ -151,9 +151,9 @@ export async function getUserAnalytics(userId: string): Promise<UserAnalytics> {
 
   // Get top posts
   const topPosts = user.posts
-    .sort((a, b) => b.viewCount - a.viewCount)
+    .sort((a: any, b: any) => b.viewCount - a.viewCount)
     .slice(0, 5)
-    .map(post => ({
+    .map((post: any) => ({
       id: post.id,
       title: post.title,
       views: post.viewCount,
@@ -260,15 +260,15 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
   })
 
   const avgPostViews = posts.length > 0
-    ? posts.reduce((sum, post) => sum + post.viewCount, 0) / posts.length
+    ? posts.reduce((sum: number, post: any) => sum + post.viewCount, 0) / posts.length
     : 0
 
   const avgLikesPerPost = posts.length > 0
-    ? posts.reduce((sum, post) => sum + post._count.reactions, 0) / posts.length
+    ? posts.reduce((sum: number, post: any) => sum + post._count.reactions, 0) / posts.length
     : 0
 
   const avgCommentsPerPost = posts.length > 0
-    ? posts.reduce((sum, post) => sum + post._count.comments, 0) / posts.length
+    ? posts.reduce((sum: number, post: any) => sum + post._count.comments, 0) / posts.length
     : 0
 
   // Get trending tags
@@ -278,14 +278,14 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
   })
 
   const tagCounts = new Map<string, number>()
-  recentPosts.forEach(post => {
-    post.tags.forEach(tag => {
+  recentPosts.forEach((post: any) => {
+    post.tags.forEach((tag: string) => {
       tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
     })
   })
 
   const topTrendingTags = Array.from(tagCounts.entries())
-    .sort((a, b) => b[1] - a[1])
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
     .slice(0, 10)
     .map(([tag, count]) => ({ tag, count }))
 

@@ -280,24 +280,24 @@ export async function getRecommendations(options: RecommendationOptions): Promis
   // Extract user's interests from their activity
   const userTags = new Set<string>()
   const interactedAuthors = new Set<string>()
-  const followingIds = user.following.map(f => f.followingId)
-  const groupIds = user.groups.map(g => g.groupId)
+  const followingIds = user.following.map((f: any) => f.followingId)
+  const groupIds = user.groups.map((g: any) => g.groupId)
 
   // Collect tags from user's posts
-  user.posts.forEach(post => {
-    post.tags.forEach(tag => userTags.add(tag))
+  user.posts.forEach((post: any) => {
+    post.tags.forEach((tag: string) => userTags.add(tag))
   })
 
   // Collect tags and authors from user's reactions
-  user.reactions.forEach(reaction => {
+  user.reactions.forEach((reaction: any) => {
     if (reaction.post) {
-      reaction.post.tags.forEach(tag => userTags.add(tag))
+      reaction.post.tags.forEach((tag: string) => userTags.add(tag))
       interactedAuthors.add(reaction.post.authorId)
     }
   })
 
   // Add user's research interests
-  user.researchInterests.forEach(interest => userTags.add(interest))
+  user.researchInterests.forEach((interest: string) => userTags.add(interest))
 
   const tagsArray = Array.from(userTags)
 
@@ -398,7 +398,7 @@ async function recommendPapers(userId: string, tags: string[], limit: number) {
   // In a real system, this would use more sophisticated algorithms
   return await prisma.paper.findMany({
     where: {
-      OR: tags.map(tag => ({
+      OR: tags.map((tag: string) => ({
         OR: [
           { title: { contains: tag, mode: 'insensitive' } },
           { abstract: { contains: tag, mode: 'insensitive' } }
@@ -466,15 +466,15 @@ export async function getTrendingTopics(limit: number = 10): Promise<{ tag: stri
 
   // Count tag occurrences
   const tagCounts = new Map<string, number>()
-  recentPosts.forEach(post => {
-    post.tags.forEach(tag => {
+  recentPosts.forEach((post: any) => {
+    post.tags.forEach((tag: string) => {
       tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
     })
   })
 
   // Sort by count and return top tags
   return Array.from(tagCounts.entries())
-    .sort((a, b) => b[1] - a[1])
+    .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
     .slice(0, limit)
     .map(([tag, count]) => ({ tag, count }))
 }
