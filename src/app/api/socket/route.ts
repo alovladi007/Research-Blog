@@ -1,185 +1,110 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { Server } from 'socket.io'
 import { createServer } from 'http'
 import { verifyToken } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { setSocketServer, getSocketServer } from '@/lib/socket'
 
-export async function GET(req: Request) {
-  let io = getSocketServer()
-  
+let io: Server | null = null
+
+export async function GET(request: NextRequest) {
   if (!io) {
     const httpServer = createServer()
+    
     io = new Server(httpServer, {
       cors: {
-        origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        methods: ['GET', 'POST'],
+        origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
         credentials: true,
       },
+      path: '/api/socket',
     })
 
     // Authentication middleware
     io.use(async (socket, next) => {
-      const token = socket.handshake.auth.token
-      if (!token) {
-        return next(new Error('Authentication required'))
+      try {
+        const token = socket.handshake.auth.token
+        if (!token) throw new Error('No token provided')
+        
+        const decoded = verifyToken(token)
+        if (!decoded) throw new Error('Invalid token')
+        
+        socket.data.userId = decoded.userId
+        next()
+      } catch (err) {
+        next(new Error('Authentication failed'))
       }
-
-      const decoded = verifyToken(token)
-      if (!decoded) {
-        return next(new Error('Invalid token'))
-      }
-
-      // Attach user info to socket
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: { id: true, name: true, email: true, role: true }
-      })
-
-      if (!user) {
-        return next(new Error('User not found'))
-      }
-
-      socket.data.user = user
-      next()
     })
 
     io.on('connection', (socket) => {
-      console.log(`User ${socket.data.user.name} connected`)
-
+      console.log(`User ${socket.data.userId} connected`)
+      
       // Join user's personal room for notifications
-      socket.join(`user:${socket.data.user.id}`)
-
-      // Update user presence
-      socket.broadcast.emit('presence-update', {
-        userId: socket.data.user.id,
-        status: 'online',
-      })
-
+      socket.join(`user:${socket.data.userId}`)
+      
       // Handle joining chat rooms
-      socket.on('join-room', (chatRoomId: string) => {
-        socket.join(`room:${chatRoomId}`)
-        console.log(`User ${socket.data.user.name} joined room ${chatRoomId}`)
+      socket.on('join-room', (roomId: string) => {
+        socket.join(`room:${roomId}`)
+        console.log(`User ${socket.data.userId} joined room ${roomId}`)
       })
-
+      
+      // Handle leaving chat rooms
+      socket.on('leave-room', (roomId: string) => {
+        socket.leave(`room:${roomId}`)
+        console.log(`User ${socket.data.userId} left room ${roomId}`)
+      })
+      
       // Handle sending messages
-      socket.on('send-message', async ({ chatRoomId, content }) => {
-        try {
-          // Save message to database
-          const message = await prisma.message.create({
-            data: {
-              content,
-              senderId: socket.data.user.id,
-              chatRoomId,
-            },
-            include: {
-              sender: {
-                select: { id: true, name: true, avatar: true }
-              }
-            }
-          })
-
-          // Emit message to all users in the room
-          io?.to(`room:${chatRoomId}`).emit(`message:${chatRoomId}`, {
-            id: message.id,
-            chatRoomId: message.chatRoomId,
-            senderId: message.sender.id,
-            senderName: message.sender.name,
-            content: message.content,
-            timestamp: message.createdAt,
-          })
-
-          // Send notification to other participants
-          const chatRoom = await prisma.chatRoom.findUnique({
-            where: { id: chatRoomId },
-            select: { participants: true }
-          })
-
-          if (chatRoom) {
-            const otherParticipants = chatRoom.participants.filter(
-              (id: string) => id !== socket.data.user.id
-            )
-
-            for (const participantId of otherParticipants) {
-              // Create notification in database
-              const notification = await prisma.notification.create({
-                data: {
-                  type: 'MESSAGE',
-                  content: `New message from ${socket.data.user.name}`,
-                  userId: participantId,
-                  relatedId: message.id,
-                }
-              })
-
-              // Send real-time notification
-              io?.to(`user:${participantId}`).emit('notification', {
-                id: notification.id,
-                type: 'MESSAGE',
-                title: 'New Message',
-                message: `${socket.data.user.name}: ${content.substring(0, 50)}...`,
-                relatedId: chatRoomId,
-                timestamp: notification.createdAt,
-              })
-            }
-          }
-        } catch (error) {
-          console.error('Error sending message:', error)
-          socket.emit('error', 'Failed to send message')
-        }
+      socket.on('send-message', async (data: {
+        roomId: string
+        content: string
+        senderName?: string
+        senderAvatar?: string
+      }) => {
+        // Broadcast to all users in the room
+        io?.to(`room:${data.roomId}`).emit('new-message', {
+          userId: socket.data.userId,
+          content: data.content,
+          senderName: data.senderName,
+          senderAvatar: data.senderAvatar,
+          timestamp: new Date(),
+        })
       })
-
+      
       // Handle typing indicators
-      socket.on('typing', ({ chatRoomId, isTyping }) => {
-        socket.to(`room:${chatRoomId}`).emit(`typing:${chatRoomId}`, {
-          chatRoomId,
-          userId: socket.data.user.id,
-          userName: socket.data.user.name,
-          isTyping,
+      socket.on('typing', (roomId: string) => {
+        socket.to(`room:${roomId}`).emit('user-typing', {
+          userId: socket.data.userId,
         })
       })
-
-      // Handle marking notifications as read
-      socket.on('mark-notification-read', async (notificationId: string) => {
-        try {
-          await prisma.notification.update({
-            where: { id: notificationId },
-            data: { read: true }
-          })
-        } catch (error) {
-          console.error('Error marking notification as read:', error)
-        }
-      })
-
-      // Handle presence updates
-      socket.on('update-presence', (status: 'online' | 'away' | 'offline') => {
-        socket.broadcast.emit('presence-update', {
-          userId: socket.data.user.id,
-          status,
-          lastSeen: new Date(),
+      
+      // Handle stop typing
+      socket.on('stop-typing', (roomId: string) => {
+        socket.to(`room:${roomId}`).emit('user-stop-typing', {
+          userId: socket.data.userId,
         })
       })
-
-      // Handle disconnect
+      
+      // Handle notifications
+      socket.on('send-notification', (data: {
+        userId: string
+        type: string
+        content: string
+      }) => {
+        io?.to(`user:${data.userId}`).emit('new-notification', {
+          type: data.type,
+          content: data.content,
+          timestamp: new Date(),
+        })
+      })
+      
       socket.on('disconnect', () => {
-        console.log(`User ${socket.data.user.name} disconnected`)
-        
-        // Update user presence
-        socket.broadcast.emit('presence-update', {
-          userId: socket.data.user.id,
-          status: 'offline',
-          lastSeen: new Date(),
-        })
+        console.log(`User ${socket.data.userId} disconnected`)
       })
     })
 
-    // Start the server on a different port
-    const socketPort = parseInt(process.env.SOCKET_PORT || '3001')
-    httpServer.listen(socketPort, () => {
-      console.log(`WebSocket server running on port ${socketPort}`)
+    const port = parseInt(process.env.SOCKET_PORT || '3001')
+    httpServer.listen(port, () => {
+      console.log(`Socket.io server running on port ${port}`)
     })
-    
-    // Store the server instance for use in other modules
-    setSocketServer(io)
   }
 
-  return new Response('WebSocket server initialized', { status: 200 })
+  return NextResponse.json({ status: 'Socket.io server initialized' })
 }
