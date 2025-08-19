@@ -3,7 +3,6 @@ import { hashPassword, generateToken, isAcademicEmail, isCorporateEmail, sanitiz
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 
-// Validation schema for signup
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
