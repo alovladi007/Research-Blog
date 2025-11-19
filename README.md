@@ -68,43 +68,77 @@ ScholarHub is a cutting-edge social platform designed exclusively for the academ
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - PostgreSQL 14+
-- Redis (optional, for caching)
-- SMTP server for emails
+- AWS S3 bucket (for file uploads)
+- SMTP server (for email verification)
+- Redis (optional, for production rate limiting)
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
-git clone https://github.com/your-org/scholar-hub.git
-cd scholar-hub
+git clone https://github.com/alovladi007/Research-Blog.git
+cd Research-Blog
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
+3. **Set up environment variables:**
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
-4. Set up the database:
+**Required environment variables:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Generate with: `openssl rand -base64 32`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` - Email server configuration
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET` - AWS S3 for file uploads
+
+4. **Set up the database:**
 ```bash
+# Generate Prisma client
 npx prisma generate
+
+# Run migrations
 npx prisma migrate dev
-npx prisma db seed # Optional: seed with sample data
+
+# Seed database with sample data (optional but recommended for testing)
+npm run prisma:seed
 ```
 
-5. Run the development server:
+**Note:** The seed script creates 6 test users. Login credentials:
+- Email: `alice.johnson@mit.edu`
+- Password: `password123`
+- (All seeded users have the same password)
+
+5. **Run the development server:**
+
+**Option A: Standard Next.js (no real-time features)**
 ```bash
 npm run dev
 ```
 
+**Option B: With Socket.io (recommended for full functionality)**
+```bash
+npm run dev:socket
+```
+
 Visit `http://localhost:3000` to see the application.
+
+### Production Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for comprehensive deployment instructions including:
+- Vercel deployment
+- VPS/Docker deployment
+- AWS S3 configuration
+- Email server setup
+- SSL/HTTPS configuration
+- Scaling strategies
 
 ## 📚 Project Structure
 
@@ -168,15 +202,125 @@ npm run type-check
 
 ## 🔒 Security
 
-- **Data Encryption**: All sensitive data encrypted at rest
-- **HTTPS Only**: Enforced SSL/TLS
-- **Rate Limiting**: API rate limiting to prevent abuse
-- **Content Security Policy**: Strict CSP headers
-- **Regular Security Audits**: Quarterly penetration testing
+**Production-Grade Security Implemented:**
+
+- ✅ **JWT in httpOnly Cookies**: XSS protection (tokens not accessible to JavaScript)
+- ✅ **Required JWT Secret**: No default fallback, enforced at startup
+- ✅ **Rate Limiting**:
+  - Auth endpoints: 5 requests / 15 minutes
+  - Upload endpoints: 10 requests / minute
+  - API endpoints: 60 requests / minute
+- ✅ **CORS Configuration**: Origin validation and credentials support
+- ✅ **Security Headers**:
+  - Content-Security-Policy
+  - X-Frame-Options: DENY
+  - X-Content-Type-Options: nosniff
+  - X-XSS-Protection
+  - Strict-Transport-Security (production)
+  - Referrer-Policy
+  - Permissions-Policy
+- ✅ **Server-Side Route Protection**: Middleware authentication
+- ✅ **Input Validation**: Zod schemas on all API endpoints
+- ✅ **SQL Injection Protection**: Prisma ORM with parameterized queries
+- ✅ **File Upload Validation**: Type and size limits enforced
+
+## 📖 Documentation
+
+- **[API Documentation](./API.md)** - Complete REST API reference with examples
+- **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment instructions
+- **Environment Variables** - See `.env.example` for all configuration options
+
+### Available Scripts
+
+```bash
+# Development
+npm run dev              # Next.js dev server (no Socket.io)
+npm run dev:socket       # With Socket.io support (recommended)
+
+# Building
+npm run build           # Production build
+npm run start           # Start production server
+npm run start:socket    # Start with Socket.io
+
+# Database
+npm run prisma:generate # Generate Prisma client
+npm run prisma:migrate  # Run database migrations
+npm run prisma:studio   # Open Prisma Studio
+npm run prisma:seed     # Seed database with test data
+
+# Quality
+npm run type-check      # TypeScript type checking
+npm run lint            # ESLint
+```
+
+### API Endpoints Summary
+
+**Authentication:**
+- `POST /api/auth/signup` - Create account
+- `POST /api/auth/signin` - Login
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/session` - Get current user
+- `POST /api/auth/verify` - Verify email
+- `POST /api/auth/resend-verification` - Resend verification email
+
+**Users:**
+- `GET /api/users` - List users
+- `GET /api/users/:id` - Get user profile
+- `PUT /api/users/:id` - Update profile
+- `POST /api/users/:id/follow` - Follow/unfollow user
+- `GET /api/users/:id/followers` - Get followers
+- `GET /api/users/:id/following` - Get following
+
+**Posts:**
+- `GET /api/posts` - List posts (with filters)
+- `POST /api/posts` - Create post
+- `GET /api/posts/:id` - Get post
+- `PUT /api/posts/:id` - Update post
+- `DELETE /api/posts/:id` - Delete post
+- `POST /api/posts/:id/comments` - Add comment
+- `POST /api/posts/:id/reactions` - Add reaction
+- `POST /api/posts/:id/bookmark` - Toggle bookmark
+
+**Papers:**
+- `GET /api/papers` - List papers
+- `POST /api/papers` - Submit paper
+- `GET /api/papers/:id` - Get paper details
+- `PUT /api/papers/:id` - Update paper
+- `DELETE /api/papers/:id` - Delete paper
+- `GET /api/papers/:id/reviews` - Get reviews
+- `POST /api/papers/:id/reviews` - Submit review
+
+**Groups:**
+- `GET /api/groups` - List groups
+- `POST /api/groups` - Create group
+- `GET /api/groups/:id` - Get group details
+- `POST /api/groups/:id/members` - Join group
+- `DELETE /api/groups/:id/members` - Leave group
+
+**Projects:**
+- `GET /api/projects` - List projects
+- `POST /api/projects` - Create project
+- `GET /api/projects/:id/members` - Get members
+- `POST /api/projects/:id/members` - Add member
+- `DELETE /api/projects/:id/members` - Remove member
+
+**Messaging:**
+- `GET /api/messages/:roomId` - Get messages
+- `POST /api/messages/:roomId` - Send message
+- `PUT /api/messages/:roomId` - Mark as read
+
+**Other:**
+- `GET /api/search` - Search across platform
+- `POST /api/upload` - Upload file (avatar/paper/attachment)
+- `DELETE /api/upload` - Delete file
+- `GET /api/notifications` - Get notifications
+- `PUT /api/notifications` - Mark as read
+
+See [API.md](./API.md) for detailed documentation with request/response examples.
 
 ## 🤝 Contributing
 
-We welcome contributions from the academic community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions from the academic community!
 
 ### Development Workflow
 1. Fork the repository
@@ -184,6 +328,12 @@ We welcome contributions from the academic community! Please see our [Contributi
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Code Style
+- TypeScript for type safety
+- ESLint for code quality
+- Prettier for formatting
+- Conventional commits for clear history
 
 ## 📄 License
 
