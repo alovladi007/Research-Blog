@@ -1,12 +1,16 @@
 'use client'
 
 import React, { useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import remarkGfm from 'remark-gfm'
 import { Card, CardContent, CardFooter } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { formatRelativeTime, getInitials } from '@/lib/utils'
 import { usePosts } from '@/hooks/useApi'
 import { useAuth } from '@/contexts/AuthContext'
 import CommentSection from './CommentSection'
+import 'katex/dist/katex.min.css'
 
 interface PostCardProps {
   post: any
@@ -107,7 +111,39 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
         {post.title && (
           <h3 className="text-xl font-semibold text-gray-900 mb-2">{post.title}</h3>
         )}
-        <div className="text-gray-700 whitespace-pre-wrap mb-4">{post.content}</div>
+        <div className="text-gray-700 mb-4 prose prose-sm max-w-none">
+          {post.latex ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkMath, remarkGfm]}
+              components={{
+                // Custom rendering for math
+                code({ className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || '')
+                  if (match && match[1] === 'math') {
+                    // Inline math
+                    return (
+                      <span
+                        className="katex-inline"
+                        dangerouslySetInnerHTML={{
+                          __html: `$${String(children).replace(/\n$/, '')}$`,
+                        }}
+                      />
+                    )
+                  }
+                  return (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  )
+                },
+              }}
+            >
+              {post.content}
+            </ReactMarkdown>
+          ) : (
+            <div className="whitespace-pre-wrap">{post.content}</div>
+          )}
+        </div>
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (

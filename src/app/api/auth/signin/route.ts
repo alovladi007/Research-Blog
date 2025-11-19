@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyPassword, generateToken, sanitizeUser } from '@/lib/auth'
+import {
+  verifyPassword,
+  generateToken,
+  sanitizeUser,
+  serializeCookie,
+  AUTH_COOKIE_NAME,
+  AUTH_COOKIE_OPTIONS,
+} from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -59,14 +66,23 @@ export async function POST(request: NextRequest) {
     // Return sanitized user data
     const sanitizedUser = sanitizeUser(user)
 
-    return NextResponse.json(
+    // Create response with httpOnly cookie
+    const response = NextResponse.json(
       {
         message: 'Signin successful',
         user: sanitizedUser,
-        token,
+        token, // Keep for backward compatibility with existing frontend
       },
       { status: 200 }
     )
+
+    // Set httpOnly cookie for secure token storage
+    response.headers.set(
+      'Set-Cookie',
+      serializeCookie(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS)
+    )
+
+    return response
   } catch (error) {
     console.error('Signin error:', error)
     return NextResponse.json(

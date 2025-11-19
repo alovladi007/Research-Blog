@@ -11,7 +11,15 @@ import { User } from '@prisma/client'
 // version extends support to corporate research organisations and exposes
 // convenience helpers for checking access level.
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+// SECURITY: JWT_SECRET must be set in environment variables
+if (!process.env.JWT_SECRET) {
+  throw new Error(
+    'FATAL: JWT_SECRET environment variable is not set. ' +
+    'Generate one with: openssl rand -base64 32'
+  )
+}
+
+const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES_IN = '7d'
 
 /**
@@ -166,4 +174,53 @@ export function sanitizeUser<T extends Partial<User>>(user: T): Omit<T, 'passwor
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...sanitized } = user as any
   return sanitized
+}
+
+/**
+ * Cookie configuration for JWT tokens
+ */
+export const AUTH_COOKIE_NAME = 'auth-token'
+export const AUTH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+  path: '/',
+}
+
+/**
+ * Serialize a cookie header
+ */
+export function serializeCookie(name: string, value: string, options: any): string {
+  const stringOptions = Object.entries(options)
+    .map(([key, val]) => {
+      if (typeof val === 'boolean') return val ? key : ''
+      return `${key}=${val}`
+    })
+    .filter(Boolean)
+    .join('; ')
+
+  return `${name}=${value}; ${stringOptions}`
+}
+
+/**
+ * Extract token from request (supports both cookies and Authorization header)
+ */
+export function extractToken(request: Request): string | null {
+  // Try Authorization header first (for backward compatibility)
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7)
+  }
+
+  // Try cookie
+  const cookies = request.headers.get('cookie')
+  if (cookies) {
+    const match = cookies.match(new RegExp(`(?:^|;\\s*)${AUTH_COOKIE_NAME}=([^;]+)`))
+    if (match) {
+      return match[1]
+    }
+  }
+
+  return null
 }

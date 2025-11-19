@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { hashPassword, generateToken, isAcademicEmail, isCorporateEmail, sanitizeUser } from '@/lib/auth'
+import {
+  hashPassword,
+  generateToken,
+  generateVerificationToken,
+  isAcademicEmail,
+  isCorporateEmail,
+  sanitizeUser,
+  serializeCookie,
+  AUTH_COOKIE_NAME,
+  AUTH_COOKIE_OPTIONS,
+} from '@/lib/auth'
+import { sendVerificationEmail } from '@/lib/email'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -46,6 +57,9 @@ export async function POST(request: NextRequest) {
     const isCorporate = isCorporateEmail(email)
     const verificationStatus = isAcademic || isCorporate ? 'VERIFIED' : 'PENDING'
 
+    // Generate verification token for non-academic/corporate emails
+    const verificationToken = verificationStatus === 'PENDING' ? generateVerificationToken() : null
+
     // Hash password
     const hashedPassword = await hashPassword(password)
 
@@ -62,8 +76,19 @@ export async function POST(request: NextRequest) {
         researchInterests: researchInterests || [],
         verificationStatus,
         verifiedAt: verificationStatus === 'VERIFIED' ? new Date() : null,
+        verificationDoc: verificationToken, // Store verification token temporarily
       },
     })
+
+    // Send verification email for non-verified users
+    if (verificationStatus === 'PENDING' && verificationToken) {
+      try {
+        await sendVerificationEmail(email, name, verificationToken)
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError)
+        // Don't fail signup if email fails, user can request resend
+      }
+    }
 
     // Generate JWT token
     const token = generateToken(user.id)
@@ -71,15 +96,24 @@ export async function POST(request: NextRequest) {
     // Return sanitized user data
     const sanitizedUser = sanitizeUser(user)
 
-    return NextResponse.json(
+    // Create response with httpOnly cookie
+    const response = NextResponse.json(
       {
         message: 'User created successfully',
         user: sanitizedUser,
-        token,
+        token, // Keep for backward compatibility
         verified: verificationStatus === 'VERIFIED',
       },
       { status: 201 }
     )
+
+    // Set httpOnly cookie for secure token storage
+    response.headers.set(
+      'Set-Cookie',
+      serializeCookie(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS)
+    )
+
+    return response
   } catch (error) {
     console.error('Signup error:', error)
     return NextResponse.json(

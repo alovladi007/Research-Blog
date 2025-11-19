@@ -14,9 +14,9 @@ export function useApi() {
     async <T = any>(url: string, options: ApiOptions = {}): Promise<T> => {
       const { authenticated = true, headers = {}, ...restOptions } = options
 
-      const finalHeaders: HeadersInit = {
+      const finalHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...headers,
+        ...(headers as Record<string, string>),
       }
 
       if (authenticated && token) {

@@ -5,9 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:socket": "node server.js",
     "test-files": "node test-build.js",
     "build": "node test-build.js && next build",
     "start": "next start",
+    "start:socket": "NODE_ENV=production node server.js",
     "postinstall": "prisma generate || true",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
@@ -18,6 +20,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.934.0",
+    "@aws-sdk/lib-storage": "^3.934.0",
+    "@aws-sdk/s3-request-presigner": "^3.934.0",
     "@hookform/resolvers": "^3.3.4",
     "@prisma/client": "^5.9.1",
     "@radix-ui/react-alert-dialog": "^1.0.5",
