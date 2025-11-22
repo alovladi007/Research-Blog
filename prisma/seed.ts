@@ -118,7 +118,7 @@ async function main() {
         role: 'STUDENT',
         institution: 'Harvard University',
         department: 'Biomedical Engineering',
-        bio: 'Master's student in computational biology',
+        bio: 'Masters student in computational biology',
         researchInterests: ['Bioinformatics', 'Genomics', 'Machine Learning'],
         verificationStatus: 'VERIFIED',
         verifiedAt: new Date(),

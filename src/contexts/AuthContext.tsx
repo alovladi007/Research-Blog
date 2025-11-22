@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: {
           'Authorization': `Bearer ${storedToken}`,
         },
+        credentials: 'include', // Include cookies in requests
       })
 
       if (response.ok) {
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // Include cookies in requests
       })
 
       if (!response.ok) {
@@ -130,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(signUpData),
+        credentials: 'include', // Include cookies in requests
       })
 
       if (!response.ok) {
@@ -148,11 +151,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signOut = () => {
-    setUser(null)
-    setToken(null)
-    localStorage.removeItem('token')
-    router.push('/')
+  const signOut = async () => {
+    try {
+      // Call logout API to clear the httpOnly cookie
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (error) {
+      console.error('Logout API call failed:', error)
+    } finally {
+      // Clear local state regardless of API call result
+      setUser(null)
+      setToken(null)
+      localStorage.removeItem('token')
+      router.push('/')
+    }
   }
 
   const updateUser = (data: Partial<User>) => {

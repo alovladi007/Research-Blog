@@ -183,7 +183,7 @@ export const AUTH_COOKIE_NAME = 'auth-token'
 export const AUTH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: 'lax' as const, // Changed from 'strict' to 'lax' to allow cookies on top-level navigations
   maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
   path: '/',
 }
