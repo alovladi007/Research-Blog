@@ -5,7 +5,7 @@ echo "Starting build process..."
 # Check if DATABASE_URL exists, if not use a dummy URL for build
 if [ -z "$DATABASE_URL" ]; then
   echo "DATABASE_URL not set, using dummy URL for Prisma generation"
-  export DATABASE_URL="postgresql://user:password@localhost:5432/db"
+  export DATABASE_URL="postgresql://user:password@localhost:5433/db"
 fi
 
 # Generate Prisma Client

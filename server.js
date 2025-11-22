@@ -18,7 +18,7 @@ const { Server } = require('socket.io')
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = process.env.HOST || 'localhost'
-const port = parseInt(process.env.PORT || '3000', 10)
+const port = parseInt(process.env.PORT || '3200', 10)
 
 // Create Next.js app
 const app = next({ dev, hostname, port })
@@ -39,7 +39,7 @@ app.prepare().then(() => {
   // Initialize Socket.io
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      origin: process.env.NEXTAUTH_URL || 'http://localhost:3200',
       credentials: true,
       methods: ['GET', 'POST'],
     },

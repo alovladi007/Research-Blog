@@ -128,7 +128,7 @@ npm run dev
 npm run dev:socket
 ```
 
-Visit `http://localhost:3000` to see the application.
+Visit `http://localhost:3200` to see the application.
 
 ### Production Deployment
 

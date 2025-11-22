@@ -139,11 +139,11 @@ npm install
 Create a `.env.local` file:
 ```env
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/scholar_hub"
+DATABASE_URL="postgresql://user:password@localhost:5433/scholar_hub"
 
 # Authentication
 JWT_SECRET="your-super-secret-jwt-key"
-NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_URL="http://localhost:3200"
 
 # Email (Optional)
 EMAIL_HOST="smtp.gmail.com"
@@ -173,7 +173,7 @@ npm run dev
 ```
 
 6. **Access the application**
-- Main app: http://localhost:3000
+- Main app: http://localhost:3200
 - Prisma Studio: `npx prisma studio`
 
 ## 📝 API Documentation

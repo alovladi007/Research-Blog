@@ -36,7 +36,7 @@ export default function ChatWindow({ roomId, recipientName, recipientId }: ChatW
 
   useEffect(() => {
     // Initialize Socket.io connection
-    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
+    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3200', {
       auth: { token },
     })
 

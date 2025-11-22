@@ -14,11 +14,11 @@ Create a `.env` file in the root directory:
 
 ```bash
 # Database (Required)
-DATABASE_URL="postgresql://user:password@localhost:5432/scholar_hub"
+DATABASE_URL="postgresql://user:password@localhost:5433/scholar_hub"
 
 # Authentication (Required)
 JWT_SECRET="<generate with: openssl rand -base64 32>"
-NEXTAUTH_URL="http://localhost:3000"  # Change to your domain in production
+NEXTAUTH_URL="http://localhost:3200"  # Change to your domain in production
 NEXTAUTH_SECRET="<generate with: openssl rand -base64 32>"
 
 # Email Configuration (Required)
@@ -35,7 +35,7 @@ AWS_REGION="us-east-1"
 AWS_S3_BUCKET="scholar-hub"
 
 # Redis (Optional - for production rate limiting)
-REDIS_URL="redis://localhost:6379"
+REDIS_URL="redis://localhost:6380"
 
 # Analytics (Optional)
 GOOGLE_ANALYTICS_ID="G-XXXXXXXXXX"
@@ -81,13 +81,13 @@ npm run prisma:seed
 ```bash
 npm run dev
 ```
-Visit: http://localhost:3000
+Visit: http://localhost:3200
 
 **Option B: With Socket.io (recommended)**
 ```bash
 npm run dev:socket
 ```
-Visit: http://localhost:3000
+Visit: http://localhost:3200
 
 Socket.io will run on the same port as Next.js.
 
@@ -170,7 +170,7 @@ server {
     server_name scholarhub.com;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3200;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -183,7 +183,7 @@ server {
 
     # Socket.io support
     location /socket.io/ {
-        proxy_pass http://localhost:3000/socket.io/;
+        proxy_pass http://localhost:3200/socket.io/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -278,7 +278,7 @@ Create health check endpoints:
 
 ```bash
 # Check API
-curl http://localhost:3000/api/auth/session
+curl http://localhost:3200/api/auth/session
 
 # Check database
 npx prisma db execute --url=$DATABASE_URL

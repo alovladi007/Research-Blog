@@ -1,6 +1,6 @@
 # ScholarHub API Documentation
 
-Base URL: `http://localhost:3000/api` (development)
+Base URL: `http://localhost:3200/api` (development)
 
 ## Authentication
 
@@ -788,7 +788,7 @@ All endpoints may return these error responses:
 
 ## WebSocket Events (Socket.io)
 
-Connect to: `ws://localhost:3000` (or your domain)
+Connect to: `ws://localhost:3200` (or your domain)
 
 ### Client → Server Events
 
@@ -886,24 +886,24 @@ Response includes pagination metadata:
 
 ```bash
 # Sign up
-curl -X POST http://localhost:3000/api/auth/signup \
+curl -X POST http://localhost:3200/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"test@university.edu","password":"test123","name":"Test User","role":"STUDENT"}'
 
 # Sign in
-curl -X POST http://localhost:3000/api/auth/signin \
+curl -X POST http://localhost:3200/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{"email":"test@university.edu","password":"test123"}'
 
 # Get posts (with token)
-curl http://localhost:3000/api/posts \
+curl http://localhost:3200/api/posts \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
 ### With Postman/Insomnia
 
 1. Import this documentation as OpenAPI
-2. Set base URL to `http://localhost:3000/api`
+2. Set base URL to `http://localhost:3200/api`
 3. Add token to Authorization header
 4. Test endpoints
 

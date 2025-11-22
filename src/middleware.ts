@@ -79,9 +79,8 @@ export async function middleware(request: NextRequest) {
   // 2. CORS HEADERS
   const origin = request.headers.get('origin')
   const allowedOrigins = [
-    process.env.NEXTAUTH_URL || 'http://localhost:3000',
-    'http://localhost:3000',
-    'http://localhost:3001',
+    process.env.NEXTAUTH_URL || 'http://localhost:3200',
+    'http://localhost:3200',
   ]
 
   if (origin && allowedOrigins.includes(origin)) {
