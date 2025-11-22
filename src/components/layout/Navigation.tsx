@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotifications } from '@/hooks/useApi'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
 
 export default function Navigation() {

@@ -5,8 +5,8 @@ import { usePosts, useUsers } from '@/hooks/useApi'
 import { useState, useEffect } from 'react'
 import PostCard from '@/components/posts/PostCard'
 import CreatePost from '@/components/posts/CreatePost'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
 function DashboardPage() {

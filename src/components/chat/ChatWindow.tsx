@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { formatRelativeTime, getInitials } from '@/lib/utils'
 import io, { Socket } from 'socket.io-client'
 

@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Textarea } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 import { usePosts } from '@/hooks/useApi'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatRelativeTime, getInitials } from '@/lib/utils'

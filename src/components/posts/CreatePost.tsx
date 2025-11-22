@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { Input, Textarea } from '@/components/ui/Input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { usePosts } from '@/hooks/useApi'
 
 interface CreatePostProps {

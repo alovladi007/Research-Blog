@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { usePosts } from '@/hooks/useApi'
 import PostCard from '@/components/posts/PostCard'
 import CreatePost from '@/components/posts/CreatePost'
-import { Card, CardContent } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { debounce } from '@/lib/utils'
 
 export default function AdvancedFeedPage() {
