@@ -39,6 +39,15 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const response = NextResponse.next()
 
+  // DEV MODE: Bypass authentication if enabled
+  const bypassAuth = process.env.BYPASS_AUTH === 'true' && process.env.NODE_ENV === 'development'
+
+  if (bypassAuth) {
+    // Add mock user ID for dev mode
+    response.headers.set('X-User-Id', 'dev-user-bypass')
+    response.headers.set('X-Dev-Mode', 'true')
+  }
+
   // 1. SECURITY HEADERS
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-Content-Type-Options', 'nosniff')
@@ -194,6 +203,12 @@ export async function middleware(request: NextRequest) {
   )
 
   if (!isProtectedRoute) {
+    return response
+  }
+
+  // DEV MODE: Skip authentication if bypass is enabled
+  if (bypassAuth) {
+    console.log('🔓 [DEV] Bypassing authentication for:', pathname)
     return response
   }
 

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
@@ -22,7 +23,23 @@ export default function SignUpPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signUp } = useAuth()
+  const { signUp, user } = useAuth()
+  const router = useRouter()
+
+  // Redirect if bypass is enabled or user is already logged in
+  useEffect(() => {
+    const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true'
+
+    if (bypassAuth) {
+      console.log('🔓 [DEV] Auth bypass enabled - redirecting to dashboard')
+      router.push('/dashboard')
+      return
+    }
+
+    if (user) {
+      router.push('/dashboard')
+    }
+  }, [user, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({

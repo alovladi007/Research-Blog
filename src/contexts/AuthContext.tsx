@@ -53,6 +53,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load token from localStorage on mount
   useEffect(() => {
+    // DEV MODE: Check if auth bypass is enabled
+    const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true'
+
+    if (bypassAuth) {
+      console.log('🔓 [DEV] Authentication bypass enabled - using mock user')
+      // Create a mock user for development
+      const mockUser: User = {
+        id: 'dev-user-bypass',
+        email: 'dev@localhost.com',
+        name: 'Development User',
+        avatar: '',
+        role: 'researcher',
+        institution: 'Development Institute',
+        department: 'Computer Science',
+        bio: 'This is a development user for testing without authentication',
+        researchInterests: ['AI', 'Web Development', 'Testing'],
+        verificationStatus: 'verified',
+        _count: {
+          posts: 0,
+          followers: 0,
+          following: 0,
+        },
+      }
+      setUser(mockUser)
+      setToken('dev-bypass-token')
+      setLoading(false)
+      return
+    }
+
     const storedToken = localStorage.getItem('token')
     if (storedToken) {
       setToken(storedToken)

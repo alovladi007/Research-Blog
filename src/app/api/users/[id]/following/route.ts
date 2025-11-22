@@ -54,8 +54,23 @@ export async function GET(
       },
       { status: 200 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch following:', error)
+
+    // If database connection error, return empty data instead of error
+    if (error?.name === 'PrismaClientInitializationError' || error?.message?.includes("Can't reach database")) {
+      return NextResponse.json(
+        {
+          following: [],
+          page: 1,
+          limit: 20,
+          total: 0,
+          hasMore: false,
+        },
+        { status: 200 }
+      )
+    }
+
     return NextResponse.json(
       { message: 'An error occurred while fetching following' },
       { status: 500 }

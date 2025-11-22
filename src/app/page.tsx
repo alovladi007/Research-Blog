@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { 
   ArrowRight, 
@@ -69,6 +70,12 @@ const stats = [
 ]
 
 export default function LandingPage() {
+  const [bypassAuth, setBypassAuth] = useState(false)
+
+  useEffect(() => {
+    setBypassAuth(process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true')
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-scholar-50 via-white to-scholar-50">
       {/* Navigation */}
@@ -86,15 +93,26 @@ export default function LandingPage() {
               <Link href="/contact" className="text-gray-700 hover:text-scholar-600 transition">Contact</Link>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/auth/signin">
-                <Button variant="ghost">Sign In</Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button className="bg-scholar-600 hover:bg-scholar-700">
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+              {bypassAuth ? (
+                <Link href="/dashboard">
+                  <Button className="bg-scholar-600 hover:bg-scholar-700">
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/auth/signin">
+                    <Button variant="ghost">Sign In</Button>
+                  </Link>
+                  <Link href="/auth/signup">
+                    <Button className="bg-scholar-600 hover:bg-scholar-700">
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -121,9 +139,9 @@ export default function LandingPage() {
               share knowledge, and advance academic discourse.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth/signup">
+              <Link href={bypassAuth ? "/dashboard" : "/auth/signup"}>
                 <Button size="lg" className="bg-scholar-600 hover:bg-scholar-700 text-lg px-8">
-                  Join the Community
+                  {bypassAuth ? "Go to Dashboard" : "Join the Community"}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -256,15 +274,17 @@ export default function LandingPage() {
             <p className="text-xl text-gray-600 mb-8">
               Connect with researchers worldwide and accelerate your academic journey.
             </p>
-            <Link href="/auth/signup">
+            <Link href={bypassAuth ? "/dashboard" : "/auth/signup"}>
               <Button size="lg" className="bg-scholar-600 hover:bg-scholar-700 text-lg px-10 py-6">
-                Get Started Free
+                {bypassAuth ? "Go to Dashboard" : "Get Started Free"}
                 <Zap className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <p className="text-sm text-gray-500 mt-4">
-              No credit card required • Verify with your institutional email
-            </p>
+            {!bypassAuth && (
+              <p className="text-sm text-gray-500 mt-4">
+                No credit card required • Verify with your institutional email
+              </p>
+            )}
           </motion.div>
         </div>
       </section>

@@ -50,8 +50,22 @@ export async function GET(request: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch posts:', error)
+
+    // If database connection error, return empty data instead of error
+    if (error?.name === 'PrismaClientInitializationError' || error?.message?.includes("Can't reach database")) {
+      return NextResponse.json(
+        {
+          posts: [],
+          page: 1,
+          limit: 20,
+          hasMore: false,
+        },
+        { status: 200 }
+      )
+    }
+
     return NextResponse.json(
       { message: 'An error occurred while fetching posts' },
       { status: 500 }
