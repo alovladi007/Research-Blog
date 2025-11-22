@@ -26,6 +26,7 @@ export function useApi() {
       const response = await fetch(url, {
         ...restOptions,
         headers: finalHeaders,
+        credentials: 'include', // Include cookies in requests
       })
 
       if (!response.ok) {
