@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import PostCard from '@/components/posts/PostCard'
-import { Card, CardContent } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface RecommendedFeedProps {
   type?: 'posts' | 'papers' | 'mixed'

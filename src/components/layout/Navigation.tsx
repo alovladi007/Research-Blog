@@ -33,6 +33,11 @@ export default function Navigation() {
     }
   }
 
+  // Don't render navigation on dashboard pages (dashboard has its own layout)
+  if (pathname?.startsWith('/dashboard')) {
+    return null
+  }
+
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
     { href: '/feed', label: 'Feed', icon: '📰' },
