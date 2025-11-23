@@ -20,6 +20,37 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // DEV MODE: Handle bypass auth token
+    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
+    if (authHeader?.includes('dev-bypass-token') && params.id === 'dev-user-bypass') {
+      const mockUser = {
+        id: 'dev-user-bypass',
+        email: 'dev@localhost.com',
+        name: 'Development User',
+        avatar: null,
+        role: 'RESEARCHER',
+        institution: 'Development Institute',
+        department: 'Computer Science',
+        bio: 'This is a development user for testing without authentication',
+        researchInterests: ['AI', 'Web Development', 'Testing'],
+        orcid: null,
+        googleScholarId: null,
+        linkedinUrl: null,
+        websiteUrl: null,
+        verificationStatus: 'VERIFIED',
+        createdAt: new Date().toISOString(),
+        _count: {
+          posts: 0,
+          followers: 0,
+          following: 0,
+          papers: 0,
+          projects: 0,
+          groups: 0,
+        },
+      }
+      return NextResponse.json({ user: mockUser, isFollowing: false }, { status: 200 })
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: params.id },
       select: {
@@ -59,7 +90,6 @@ export async function GET(
     }
 
     // Check if authenticated user is following this user
-    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
     let isFollowing = false
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -101,7 +131,7 @@ export async function PUT(
 ) {
   try {
     const authHeader = request.headers.get('authorization') || request.headers.get('Authorization')
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { message: 'Authentication required' },
@@ -110,6 +140,44 @@ export async function PUT(
     }
 
     const token = authHeader.split(' ')[1]
+
+    // DEV MODE: Handle bypass auth token
+    if (token === 'dev-bypass-token' && params.id === 'dev-user-bypass') {
+      const body = await request.json()
+      const validationResult = updateUserSchema.safeParse(body)
+      if (!validationResult.success) {
+        return NextResponse.json(
+          { message: 'Invalid input', errors: validationResult.error.errors },
+          { status: 400 }
+        )
+      }
+
+      // In dev mode, just return success without actually updating anything
+      const mockUser = {
+        id: 'dev-user-bypass',
+        email: 'dev@localhost.com',
+        name: validationResult.data.name || 'Development User',
+        avatar: null,
+        role: 'RESEARCHER',
+        institution: validationResult.data.institution || 'Development Institute',
+        department: validationResult.data.department || 'Computer Science',
+        bio: validationResult.data.bio || 'This is a development user for testing without authentication',
+        researchInterests: validationResult.data.researchInterests || ['AI', 'Web Development', 'Testing'],
+        orcid: validationResult.data.orcid || null,
+        googleScholarId: validationResult.data.googleScholarId || null,
+        linkedinUrl: validationResult.data.linkedinUrl || null,
+        websiteUrl: validationResult.data.websiteUrl || null,
+      }
+
+      return NextResponse.json(
+        {
+          message: 'Profile updated successfully',
+          user: mockUser,
+        },
+        { status: 200 }
+      )
+    }
+
     const decoded = verifyToken(token)
 
     if (!decoded) {
@@ -128,7 +196,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    
+
     // Validate input
     const validationResult = updateUserSchema.safeParse(body)
     if (!validationResult.success) {

@@ -16,6 +16,13 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1]
+
+    // DEV MODE: Handle bypass auth token
+    if (token === 'dev-bypass-token') {
+      // Return empty chat rooms for dev mode
+      return NextResponse.json({ chatRooms: [] })
+    }
+
     const decoded = verifyToken(token)
     if (!decoded) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 })

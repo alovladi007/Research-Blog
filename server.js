@@ -11,6 +11,9 @@
  * - Deploy Socket.io server separately
  */
 
+// Load environment variables from .env file
+require('dotenv').config()
+
 const { createServer } = require('http')
 const { parse } = require('url')
 const next = require('next')

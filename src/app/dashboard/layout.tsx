@@ -51,26 +51,19 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/auth/signin')
-      return
-    }
-
-    // Mock user data - in production, fetch from API
+    // Mock user data - no authentication required
     setUser({
-      name: 'Dr. Jane Smith',
-      email: 'jane.smith@university.edu',
-      role: 'PROFESSOR',
-      institution: 'Harvard University',
+      name: 'Development User',
+      email: 'dev@localhost.com',
+      role: 'RESEARCHER',
+      institution: 'Development Institute',
       avatar: null,
     })
-  }, [router])
+  }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    router.push('/auth/signin')
+    // No authentication, just navigate to home
+    router.push('/')
   }
 
   if (!user) {
@@ -149,7 +142,11 @@ export default function DashboardLayout({
 
           {/* Bottom Actions */}
           <div className="p-4 border-t border-gray-200 space-y-2">
-            <Button className="w-full bg-scholar-600 hover:bg-scholar-700" size="sm">
+            <Button
+              className="w-full bg-scholar-600 hover:bg-scholar-700"
+              size="sm"
+              onClick={() => router.push('/dashboard/posts/new')}
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Post
             </Button>
@@ -190,7 +187,28 @@ export default function DashboardLayout({
             </div>
 
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" size="icon" className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => router.push('/dashboard/groups')}
+              >
+                <Users className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => router.push('/dashboard/messages')}
+              >
+                <MessageSquare className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => router.push('/dashboard/notifications')}
+              >
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
               </Button>

@@ -1,37 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyToken, extractToken } from '@/lib/auth'
-import { authLimiter, apiLimiter, strictLimiter } from '@/lib/rate-limit'
-
-// Protected routes that require authentication
-const protectedRoutes = [
-  '/dashboard',
-  '/profile',
-  '/projects',
-  '/papers',
-  '/feed',
-  '/api/posts',
-  '/api/groups',
-  '/api/projects',
-  '/api/papers',
-  '/api/upload',
-  '/api/notifications',
-  '/api/messages',
-]
-
-// Public routes that should not require auth
-const publicRoutes = [
-  '/',
-  '/auth/signin',
-  '/auth/signup',
-  '/api/auth/signin',
-  '/api/auth/signup',
-]
+import { apiLimiter, strictLimiter } from '@/lib/rate-limit'
 
 // Routes that need strict rate limiting
 const strictRateLimitRoutes = [
-  '/api/auth/signin',
-  '/api/auth/signup',
   '/api/upload',
 ]
 
@@ -39,14 +11,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const response = NextResponse.next()
 
-  // DEV MODE: Bypass authentication if enabled
-  const bypassAuth = process.env.BYPASS_AUTH === 'true' && process.env.NODE_ENV === 'development'
-
-  if (bypassAuth) {
-    // Add mock user ID for dev mode
-    response.headers.set('X-User-Id', 'dev-user-bypass')
-    response.headers.set('X-Dev-Mode', 'true')
-  }
+  // Add mock user ID for dev mode (no authentication required)
+  response.headers.set('X-User-Id', 'dev-user-bypass')
+  response.headers.set('X-Dev-Mode', 'true')
 
   // 1. SECURITY HEADERS
   response.headers.set('X-Frame-Options', 'DENY')
@@ -114,7 +81,7 @@ export async function middleware(request: NextRequest) {
   const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
 
   try {
-    // Apply strict rate limiting for auth and upload endpoints
+    // Apply strict rate limiting for upload endpoints
     if (strictRateLimitRoutes.some(route => pathname.startsWith(route))) {
       const result = await strictLimiter.check(ip)
 
@@ -126,30 +93,6 @@ export async function middleware(request: NextRequest) {
         return new NextResponse(
           JSON.stringify({
             error: 'Too many requests. Please try again later.',
-          }),
-          {
-            status: 429,
-            headers: {
-              ...Object.fromEntries(response.headers.entries()),
-              'Content-Type': 'application/json',
-              'Retry-After': Math.ceil((result.reset - Date.now()) / 1000).toString(),
-            },
-          }
-        )
-      }
-    }
-    // Apply auth rate limiting for auth endpoints
-    else if (pathname.startsWith('/api/auth/')) {
-      const result = await authLimiter.check(ip)
-
-      response.headers.set('X-RateLimit-Limit', result.limit.toString())
-      response.headers.set('X-RateLimit-Remaining', result.remaining.toString())
-      response.headers.set('X-RateLimit-Reset', result.reset.toString())
-
-      if (!result.success) {
-        return new NextResponse(
-          JSON.stringify({
-            error: 'Too many authentication attempts. Please try again later.',
           }),
           {
             status: 429,
@@ -191,80 +134,7 @@ export async function middleware(request: NextRequest) {
     // Continue on rate limit errors
   }
 
-  // 4. AUTHENTICATION CHECK
-  // Skip auth for public routes
-  if (publicRoutes.some(route => pathname === route || pathname.startsWith(route))) {
-    return response
-  }
-
-  // Check if route requires authentication
-  const isProtectedRoute = protectedRoutes.some(route =>
-    pathname === route || pathname.startsWith(route)
-  )
-
-  if (!isProtectedRoute) {
-    return response
-  }
-
-  // DEV MODE: Skip authentication if bypass is enabled
-  if (bypassAuth) {
-    console.log('🔓 [DEV] Bypassing authentication for:', pathname)
-    return response
-  }
-
-  // Extract and verify token
-  const token = extractToken(request)
-
-  if (!token) {
-    // Redirect to signin for page requests
-    if (!pathname.startsWith('/api/')) {
-      const signInUrl = new URL('/auth/signin', request.url)
-      signInUrl.searchParams.set('callbackUrl', pathname)
-      return NextResponse.redirect(signInUrl)
-    }
-
-    // Return 401 for API requests
-    return new NextResponse(
-      JSON.stringify({ error: 'Unauthorized' }),
-      {
-        status: 401,
-        headers: {
-          ...Object.fromEntries(response.headers.entries()),
-          'Content-Type': 'application/json',
-        },
-      }
-    )
-  }
-
-  // Verify token
-  const payload = verifyToken(token)
-
-  if (!payload) {
-    // Redirect to signin for page requests
-    if (!pathname.startsWith('/api/')) {
-      const signInUrl = new URL('/auth/signin', request.url)
-      signInUrl.searchParams.set('callbackUrl', pathname)
-      return NextResponse.redirect(signInUrl)
-    }
-
-    // Return 401 for API requests
-    return new NextResponse(
-      JSON.stringify({ error: 'Invalid or expired token' }),
-      {
-        status: 401,
-        headers: {
-          ...Object.fromEntries(response.headers.entries()),
-          'Content-Type': 'application/json',
-        },
-      }
-    )
-  }
-
-  // Add user ID to request headers for API routes
-  if (pathname.startsWith('/api/')) {
-    response.headers.set('X-User-Id', payload.userId)
-  }
-
+  // No authentication required - all routes are accessible
   return response
 }
 

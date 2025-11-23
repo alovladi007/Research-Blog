@@ -59,14 +59,17 @@ function PapersPage() {
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
-      
+
       const response = await fetch(`/api/papers?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setPapers(data.papers)
+        setPapers(data.papers || data || [])
+      } else {
+        setPapers([])
       }
     } catch (error) {
       console.error('Failed to load papers:', error)
+      setPapers([])
     } finally {
       setLoading(false)
     }
