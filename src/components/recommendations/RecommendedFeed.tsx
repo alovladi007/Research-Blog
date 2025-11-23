@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRecommendations } from '@/hooks/useRecommendations'
 import PostCard from '@/components/posts/PostCard'
+import FeedbackButtons from '@/components/recommendations/FeedbackButtons'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 
@@ -119,6 +120,22 @@ export default function RecommendedFeed({ type = 'mixed', limit = 20, onRefresh 
               <div onMouseEnter={() => handleItemView('post', item.id)}>
                 <PostCard post={item} onUpdate={loadRecommendations} />
               </div>
+              {/* Feedback buttons */}
+              <div className="mt-2 flex justify-end">
+                <FeedbackButtons
+                  itemType="post"
+                  itemId={item.id}
+                  sessionId={item.recommendationSessionId}
+                  position={item.recommendationPosition}
+                  variantId={item.variantId}
+                  onFeedback={(feedback) => {
+                    if (feedback === 'not_interested') {
+                      // Remove from view
+                      setRecommendations(recs => recs.filter(r => r.id !== item.id))
+                    }
+                  }}
+                />
+              </div>
             </div>
           )
         } else {
@@ -177,13 +194,28 @@ export default function RecommendedFeed({ type = 'mixed', limit = 20, onRefresh 
                   </div>
 
                   {/* View paper button */}
-                  <div className="mt-4">
+                  <div className="mt-4 flex items-center justify-between">
                     <Button
                       size="sm"
                       onClick={() => window.location.href = `/papers/${item.id}`}
                     >
                       View Paper
                     </Button>
+
+                    {/* Feedback buttons */}
+                    <FeedbackButtons
+                      itemType="paper"
+                      itemId={item.id}
+                      sessionId={item.recommendationSessionId}
+                      position={item.recommendationPosition}
+                      variantId={item.variantId}
+                      onFeedback={(feedback) => {
+                        if (feedback === 'not_interested') {
+                          // Remove from view
+                          setRecommendations(recs => recs.filter(r => r.id !== item.id))
+                        }
+                      }}
+                    />
                   </div>
                 </CardContent>
               </Card>

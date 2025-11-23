@@ -71,6 +71,9 @@ model User {
   bookmarks         Bookmark[]
   postViews         PostView[]
   paperViews        PaperView[]
+  feedbackGiven     RecommendationFeedback[]
+  engagementTimes   UserEngagementTime[]
+  abTestAssignments ABTestAssignment[]
 
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -410,4 +413,133 @@ model PaperView {
   @@index([userId])
   @@index([paperId])
   @@index([createdAt])
+}
+
+model RecommendationFeedback {
+  id         String   @id @default(cuid())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+
+  itemType   String   // 'post' | 'paper' | 'group' | 'project' | 'user'
+  itemId     String
+
+  feedback   String   // 'positive' | 'negative' | 'not_interested'
+  reason     String?  // Optional reason for negative feedback
+
+  // Track which recommendation session this came from
+  sessionId  String?
+  position   Int?     // Position in recommendation list (1-based)
+
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([itemType, itemId])
+  @@index([feedback])
+  @@index([createdAt])
+}
+
+model UserEngagementTime {
+  id            String   @id @default(cuid())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+
+  hourOfDay     Int      // 0-23
+  dayOfWeek     Int      // 0-6 (Sunday = 0)
+
+  // What type of content was engaged with
+  contentType   String   // 'post' | 'paper' | 'group' | 'project'
+  contentId     String
+
+  // Research interest tags from the content
+  tags          String[]
+
+  // Engagement strength (1-10)
+  engagementScore Int    @default(5)
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([hourOfDay])
+  @@index([dayOfWeek])
+  @@index([contentType])
+  @@index([createdAt])
+}
+
+model ABTestVariant {
+  id          String   @id @default(cuid())
+
+  name        String   @unique  // e.g., "recommendation_weights_v2"
+  description String?
+
+  // JSON configuration for the variant
+  config      Json     // e.g., { "contentWeight": 0.4, "socialWeight": 0.3, ... }
+
+  isActive    Boolean  @default(true)
+  isControl   Boolean  @default(false)
+
+  // Traffic allocation (0-100 percentage)
+  trafficPercent Int   @default(50)
+
+  // Metrics
+  totalAssignments Int @default(0)
+  totalPositiveFeedback Int @default(0)
+  totalNegativeFeedback Int @default(0)
+  avgClickThroughRate Float? // Percentage of recommendations clicked
+  avgEngagementTime Float?   // Average time spent on recommended items
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments ABTestAssignment[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model ABTestAssignment {
+  id        String   @id @default(cuid())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  variant   ABTestVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variantId String
+
+  // Track performance for this user
+  recommendationsShown Int @default(0)
+  recommendationsClicked Int @default(0)
+  positiveFeedback Int @default(0)
+  negativeFeedback Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, variantId])
+  @@index([userId])
+  @@index([variantId])
+}
+
+model ContentEmbedding {
+  id          String   @id @default(cuid())
+
+  contentType String   // 'post' | 'paper' | 'user_profile'
+  contentId   String
+
+  // Vector embedding (stored as array of floats in JSON)
+  embedding   Json     // e.g., [0.1, -0.3, 0.5, ...]
+
+  // Embedding model version
+  model       String   @default("text-embedding-ada-002")
+
+  // Text that was embedded
+  sourceText  String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([contentType, contentId, model])
+  @@index([contentType, contentId])
+  @@index([model])
 }
