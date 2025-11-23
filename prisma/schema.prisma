@@ -69,7 +69,9 @@ model User {
   messages          Message[]
   notifications     Notification[]
   bookmarks         Bookmark[]
-  
+  postViews         PostView[]
+  paperViews        PaperView[]
+
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   
@@ -101,7 +103,8 @@ model Post {
   comments      Comment[]
   reactions     Reaction[]
   bookmarks     Bookmark[]
-  
+  views         PostView[]
+
   viewCount     Int           @default(0)
   
   createdAt     DateTime      @default(now())
@@ -262,9 +265,10 @@ model Paper {
   
   pdfUrl        String?
   citations     Int       @default(0)
-  
+
   reviews       Review[]
-  
+  views         PaperView[]
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -356,16 +360,54 @@ model Notification {
 
 model Bookmark {
   id        String   @id @default(cuid())
-  
+
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  
+
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId    String
-  
+
   createdAt DateTime @default(now())
-  
+
   @@unique([userId, postId])
   @@index([userId])
   @@index([postId])
+}
+
+model PostView {
+  id         String   @id @default(cuid())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId     String
+
+  duration   Int?     // Time spent viewing in seconds
+  scrollDepth Float?  // Percentage of post scrolled (0-100)
+
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([postId])
+  @@index([createdAt])
+}
+
+model PaperView {
+  id         String   @id @default(cuid())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+
+  paper      Paper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  paperId    String
+
+  duration   Int?     // Time spent viewing in seconds
+  downloaded Boolean  @default(false) // Did user download the PDF?
+
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([paperId])
+  @@index([createdAt])
 }

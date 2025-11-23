@@ -5,6 +5,7 @@ import { usePosts, useUsers } from '@/hooks/useApi'
 import { useState, useEffect } from 'react'
 import PostCard from '@/components/posts/PostCard'
 import CreatePost from '@/components/posts/CreatePost'
+import RecommendedFeed from '@/components/recommendations/RecommendedFeed'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
@@ -20,7 +21,7 @@ function DashboardPage() {
     posts: 0,
   })
   const [loading, setLoading] = useState(true)
-  const [feedType, setFeedType] = useState<'all' | 'following'>('all')
+  const [feedType, setFeedType] = useState<'recommended' | 'all' | 'following'>('recommended')
 
   useEffect(() => {
     loadDashboard()
@@ -138,6 +139,16 @@ function DashboardPage() {
             {/* Feed Tabs */}
             <div className="flex space-x-4 mt-6 mb-4">
               <button
+                onClick={() => setFeedType('recommended')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  feedType === 'recommended'
+                    ? 'bg-blue-100 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                ✨ For You
+              </button>
+              <button
                 onClick={() => setFeedType('all')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   feedType === 'all'
@@ -161,7 +172,9 @@ function DashboardPage() {
             
             {/* Posts Feed */}
             <div className="space-y-6">
-              {loading ? (
+              {feedType === 'recommended' ? (
+                <RecommendedFeed type="mixed" limit={20} onRefresh={loadDashboard} />
+              ) : loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="mt-4 text-gray-500">Loading posts...</p>
